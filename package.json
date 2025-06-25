@@ -1,0 +1,45 @@
+{
+  "name": "temucs",
+  "license": "0BSD",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.4",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-navigation/bottom-tabs": "^7.3.14",
+    "@react-navigation/native": "^7.1.10",
+    "@react-navigation/native-stack": "^7.3.14",
+    "axios": "^1.9.0",
+    "date-fns": "^2.29.3",
+    "date-fns-tz": "^1.3.7",
+    "dotenv": "^16.5.0",
+    "expo": "~53.0.11",
+    "expo-constants": "~17.1.6",
+    "expo-linear-gradient": "~14.1.5",
+    "expo-location": "~18.1.5",
+    "expo-status-bar": "~2.2.3",
+    "jwt-decode": "^4.0.0",
+    "lucide-react-native": "^0.522.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.3",
+    "react-native-keyboard-aware-scroll-view": "^0.9.5",
+    "react-native-maps": "1.20.1",
+    "react-native-responsive-fontsize": "^0.5.1",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-svg": "15.11.2",
+    "react-native-vector-icons": "^10.2.0",
+    "react-native-web": "^0.20.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+}
