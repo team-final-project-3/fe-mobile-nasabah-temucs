@@ -9,10 +9,10 @@ export default function QueueSummaryContainer({
   showWaiting = true,
 }) {
   const { width } = useWindowDimensions();
-  const isCompact = width < 360; // Threshold lebar layar
+  const isCompact = width < 360;
 
   if (isCompact) {
-    // Layar kecil: 1 atas, 2 bawah
+   
     return (
       <View style={styles.cardContainer}>
         <View style={styles.singleRow}>
@@ -24,16 +24,7 @@ export default function QueueSummaryContainer({
           />
         </View>
         <View style={styles.rowWrapper}>
-          {showWaiting && (
-            <View style={styles.flexBox}>
-              <QueueDisplayBox
-                title="Antrean Saat Ini"
-                value={waiting.toString()}
-                valueColor="#E67E22"
-                borderColor="#E67E22"
-              />
-            </View>
-          )}
+         
           <View style={styles.flexBox}>
             <QueueDisplayBox
               title="Total Antrean"
@@ -47,7 +38,7 @@ export default function QueueSummaryContainer({
     );
   }
 
-  // Layout default: 3 bersampingan
+ 
   return (
     <View style={styles.cardContainer}>
       <View style={styles.rowWrapper}>
@@ -55,20 +46,10 @@ export default function QueueSummaryContainer({
           <QueueDisplayBox
             title="Sedang Dilayani"
             value={lastServed}
-            valueColor="#3498DB"
-            borderColor="#3498DB"
+            valueColor="#757575"
+            borderColor="#757575"
           />
         </View>
-        {showWaiting && (
-          <View style={styles.flexBox}>
-            <QueueDisplayBox
-              title="Antrean Saat Ini"
-              value={waiting.toString()}
-              valueColor="#E67E22"
-              borderColor="#E67E22"
-            />
-          </View>
-        )}
         <View style={styles.flexBox}>
           <QueueDisplayBox
             title="Total Antrean"
@@ -84,7 +65,7 @@ export default function QueueSummaryContainer({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    marginVertical: 16,
+    marginVertical: 20,
     marginHorizontal: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
@@ -94,6 +75,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    width: '100%',
   },
   rowWrapper: {
     flexDirection: 'row',

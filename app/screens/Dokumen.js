@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, FlatList, RefreshControl, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
 import Header from '../components/Header';
@@ -8,8 +7,13 @@ import NoRequirementsMessage from '../components/NoRequirementsMessage';
 import RequirementCategory from '../components/RequirementCategory';
 import NextButton from '../components/NextButton';
 import CustomAlert from '../components/CustomAlert';
+import * as Notifications from 'expo-notifications';
 
-import { getDocumentsByServiceIds, bookOnlineQueue, getStoredUser } from '../api/api';
+import {
+  getDocumentsByServiceIds,
+  bookOnlineQueue,
+  getStoredUser,
+} from '../api/api';
 
 const MIN_SELECTION = 1;
 
@@ -39,24 +43,42 @@ export default function Dokumen() {
       ? initialServiceNames
       : selectedServiceIds.map(id => `Layanan ID ${id}`);
 
-  const handleRefresh = () => {
-    setLoading(true);
-    setError(null);
-    setIsCustomModalVisible(false);
-  };
-
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const storedUser = await getStoredUser();
         setUser(storedUser);
       } catch (err) {
-        //console.warn('Gagal memuat user:', err?.message || err);
+        console.warn('Gagal memuat user:', err?.message || err);
       }
     };
 
     fetchUser();
   }, []);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await getDocumentsByServiceIds(selectedServiceIds);
+      const data = response?.data || [];
+
+      const grouped = [
+        {
+          id: 1,
+          requirements: data,
+        },
+      ];
+
+      setPersyaratan(grouped);
+    } catch (err) {
+      console.error('Gagal memuat dokumen:', err);
+      setError('Gagal memuat data persyaratan.');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedServiceIds]);
 
   useEffect(() => {
     if (!selectedServiceIds || selectedServiceIds.length === 0) {
@@ -64,44 +86,17 @@ export default function Dokumen() {
       return;
     }
 
-    const fetchDocuments = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const docs = await getDocumentsByServiceIds(selectedServiceIds);
-        const documentMap = new Map();
-        (docs.data || []).forEach(doc => {
-          if (!documentMap.has(doc.id)) {
-            documentMap.set(doc.id, doc);
-          }
-        });
-
-        const uniqueDocuments = Array.from(documentMap.values());
-
-        const grouped = [
-          {
-            id: 1,
-            category: "Mohon persiapkan dokumen berikut",
-            requirements: uniqueDocuments,
-          },
-        ];
-
-        setPersyaratan(grouped);
-      } catch (err) {
-        console.error("Gagal memuat dokumen:", err);
-        setError("Gagal memuat data persyaratan.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDocuments();
 
     return () => {
       if (successModalTimerRef.current) clearTimeout(successModalTimerRef.current);
     };
-  }, [selectedServiceIds]);
+  }, [selectedServiceIds, fetchDocuments]);
+
+  const handleRefresh = () => {
+    setIsCustomModalVisible(false);
+    fetchDocuments();
+  };
 
   const showSuccessQueueModal = useCallback(async () => {
     if (!branchId || !selectedServiceIds || selectedServiceIds.length === 0) {
@@ -115,17 +110,16 @@ export default function Dokumen() {
       setIsCustomModalVisible(true);
       return;
     }
-  
+
     try {
       const payload = {
         branchId,
         serviceIds: selectedServiceIds,
       };
-  
+
       const response = await bookOnlineQueue(payload);
       const queue = response?.queue;
-  
-      
+
       if (!queue?.id) {
         setCustomModalConfig({
           title: 'Kesalahan',
@@ -137,21 +131,28 @@ export default function Dokumen() {
         setIsCustomModalVisible(true);
         return;
       }
-  
+
       setCustomModalConfig({
         title: 'Antrian Berhasil Dibuat',
         message: `Nomor antrian Anda: ${queue.ticketNumber}`,
         isConfirmation: false,
         onClose: () => {
           setIsCustomModalVisible(false);
+        
+          const flatRequirements = persyaratan.flatMap(item => item.requirements || []);
+          console.log('Dokumen dikirim ke Tiket:', flatRequirements);
+
+          console.log('Dokumen hasil flatten:', flatRequirements);
+console.log('Persyaratan state:', persyaratan);
           navigation.navigate('Tiket', {
             ticketId: queue.id,
             queueNumber: queue.ticketNumber,
             estimatedWaitTime: queue.estimatedTime,
             userLocationData,
-            documents: persyaratan,
+            documents: flatRequirements, 
           });
         },
+        
         singleButtonText: 'Lihat Tiket',
         iconName: 'emoticon-happy',
         iconBackgroundColor: '#D1AF8A',
@@ -159,23 +160,21 @@ export default function Dokumen() {
         iconSize: 60,
         showCloseButton: true,
       });
-  
+
       setIsCustomModalVisible(true);
-  
     } catch (error) {
-      
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Terjadi kesalahan saat memesan antrian.';
-  
+
       setCustomModalConfig({
         title: 'Gagal Membuat Antrean',
         message: errorMessage,
         isConfirmation: false,
         onClose: () => {
           setIsCustomModalVisible(false);
-          navigation.navigate('Main'); 
+          navigation.navigate('Main');
         },
         singleButtonText: 'Tutup',
         iconName: 'alert-circle',
@@ -184,11 +183,11 @@ export default function Dokumen() {
         iconSize: 50,
         showCloseButton: true,
       });
-  
+
       setIsCustomModalVisible(true);
     }
   }, [branchId, selectedServiceIds, userLocationData, persyaratan, navigation]);
-  
+
   const handleNextPress = useCallback(() => {
     if (selectedServiceIds.length < MIN_SELECTION) {
       setCustomModalConfig({
@@ -201,7 +200,7 @@ export default function Dokumen() {
       setIsCustomModalVisible(true);
       return;
     }
-    
+
     setCustomModalConfig({
       title: 'Apakah Anda Yakin?',
       message: 'Anda akan menyetujui pembuatan antrian.',
@@ -220,7 +219,6 @@ export default function Dokumen() {
       iconSize: 40,
     });
     setIsCustomModalVisible(true);
-
   }, [selectedServiceIds.length, showSuccessQueueModal]);
 
   const renderContent = () => {
@@ -237,7 +235,7 @@ export default function Dokumen() {
         renderItem={({ item }) => <RequirementCategory category={item} />}
         contentContainerStyle={styles.listContentContainer}
         ListHeaderComponent={
-          <Text style={styles.mainTitle}>{headerTitle || "Dokumen Persyaratan"}</Text>
+          <Text style={styles.mainTitle}>{headerTitle || 'Dokumen Persyaratan'}</Text>
         }
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={handleRefresh} />
@@ -247,7 +245,8 @@ export default function Dokumen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+    <StatusBar barStyle="light-content" backgroundColor="transparent" translucent/>
       <Header isDokumen />
       {renderContent()}
       <View style={styles.buttonContainer}>
@@ -256,34 +255,32 @@ export default function Dokumen() {
           disabled={selectedServiceIds.length < MIN_SELECTION}
         />
       </View>
-
-      <CustomAlert
-        visible={isCustomModalVisible}
-        {...customModalConfig}
-      />
-    </SafeAreaView>
+      <CustomAlert visible={isCustomModalVisible} {...customModalConfig} />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f0f2f5',
   },
   mainTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#1E4064',
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 15,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
   listContentContainer: {
     paddingBottom: 20,
+    paddingHorizontal: 10,
   },
   buttonContainer: {
-    padding: 16,
-    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#f0f2f5',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },

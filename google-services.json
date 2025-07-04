@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "592087471427",
+    "project_id": "temucs-app-64a5e",
+    "storage_bucket": "temucs-app-64a5e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592087471427:android:7e766c353cfe049b3f8bf6",
+        "android_client_info": {
+          "package_name": "com.irene07.temucs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrXtH59He0G0D2n6XFKc_pKsRwk8PyIdk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

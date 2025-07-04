@@ -55,11 +55,11 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });

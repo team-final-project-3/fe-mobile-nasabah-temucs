@@ -1,25 +1,20 @@
 {
   "expo": {
-    "name": "temuCS",
+    "name": "TemuCS",
     "slug": "temuCS",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "jsEngine": "jsc",
     "newArchEnabled": false,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "splash": {},
     "entryPoint": "./node_modules/expo/AppEntry.js",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/LogoApk.png",
         "backgroundColor": "#ffffff"
       },
       "config": {
@@ -28,9 +23,6 @@
         }
       },
       "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     }
   }
 }

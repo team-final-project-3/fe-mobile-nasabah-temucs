@@ -20,6 +20,15 @@ const Header = ({
   isSearch,
   isHistory,
   isProfil,
+  isKetentuan,
+  isPrivacy,
+  isAboutUS,
+  isDaftar,
+  isCekEmail,
+  isResetPass, 
+  isDetailRiwayat,
+  isnewPass,
+
 }) => {
   const navigation = useNavigation();
   const [name, setName] = useState(null);
@@ -44,7 +53,7 @@ const Header = ({
       style={styles.backContainer}
       resizeMode="cover"
     >
-      <TouchableOpacity onPress={() => navigation.goBack()}>
+      <TouchableOpacity style={{marginTop: "48"}} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
       </TouchableOpacity>
       <Text style={styles.title}>{title}</Text>
@@ -52,14 +61,35 @@ const Header = ({
     </ImageBackground>
   );
 
+  const renderBackHeaderTiket = (title) => (
+    <ImageBackground
+      source={require('../../assets/headers.png')}
+      style={styles.backContainerTiket}
+      resizeMode="cover"
+    >
+      <Text style={styles.title}>{title}</Text>
+    </ImageBackground>
+  );
+
+  if (isTiket) return renderBackHeaderTiket('Tiket');
+  if (isHistory) return renderBackHeaderTiket('Riwayat');
+  if (isProfil) return renderBackHeaderTiket('Profil');
+ 
+
  
   if (isAmbilAntrean) return renderBackHeader('Ambil Antrean');
   if (isLayanan) return renderBackHeader('Layanan');
   if (isDokumen) return renderBackHeader('Dokumen Syarat');
   if (isSearch) return renderBackHeader('Cari Layanan');
-  if (isHistory) return renderBackHeader('Riwayat');
-  if (isProfil) return renderBackHeader('Profil');
-  if (isTiket) return renderBackHeader('Tiket');
+
+   if (isKetentuan) return renderBackHeader('Ketentuan Layanan TemuCS');
+  if (isPrivacy) return renderBackHeader ('Kebijakan Privasi')
+  if (isAboutUS) return renderBackHeader ('Detail Aplikasi')
+  if (isDaftar) return renderBackHeader ('Daftar')
+    if (isDetailRiwayat) return renderBackHeader ('Detail Tiket')
+    if (isCekEmail) return renderBackHeader ('Verifikasi OTP')
+      if (isResetPass) return renderBackHeader ('Ubah Kata Sandi')
+        if (isnewPass) return renderBackHeader ('Buat Password Baru')
 
   
   return (
@@ -91,7 +121,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    overflow: 'hidden', 
+    minHeight: 80,
+  },
 
+  backContainerTiket: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden', 
     minHeight: 80,
   },
@@ -104,6 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 32
   },
   logo: {
     width: 50,
@@ -119,5 +159,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+    marginTop: 48,
+    textAlign: 'center'
   },
 });

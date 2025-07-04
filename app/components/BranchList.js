@@ -5,7 +5,7 @@ import { getAllBranches } from '../api/api';
 import BranchCard from './BranchCard';
 import LocationProvider from './LocationProvider';
 
-export default function BranchList({ onBranchPress, filterText = '', limit, sortByDistance = false, statusFilter = 'all'}) {
+export default function BranchList({ onBranchPress, filterText = '', limit, sortByDistance = false, statusFilter = 'all' }) {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
@@ -15,7 +15,7 @@ export default function BranchList({ onBranchPress, filterText = '', limit, sort
       try {
         setLoading(true);
         const response = await getAllBranches();
-        setBranches(response.branches || []);
+        setBranches(response.data || []);
       } catch (err) {
         console.error('Gagal memuat cabang:', err);
         setApiError('Gagal memuat data cabang.');
@@ -23,10 +23,10 @@ export default function BranchList({ onBranchPress, filterText = '', limit, sort
         setLoading(false);
       }
     };
+
     fetchBranches();
   }, []);
 
-  
   return (
     <LocationProvider>
       {({ userLocation, loadingLocation, locationError }) => {
@@ -59,10 +59,11 @@ export default function BranchList({ onBranchPress, filterText = '', limit, sort
             branch.address.toLowerCase().includes(lower)
           );
         }
+
         if (statusFilter !== 'all') {
-            const isOpen = statusFilter === 'open';
-            result = result.filter(branch => branch.status === isOpen);
-          }
+          const isOpen = statusFilter === 'open';
+          result = result.filter(branch => branch.status === isOpen);
+        }
 
         if (sortByDistance && userLocation?.coords) {
           result = result.map(branch => {
@@ -73,7 +74,7 @@ export default function BranchList({ onBranchPress, filterText = '', limit, sort
                 branch.latitude,
                 branch.longitude
               );
-              return { ...branch, distance: parseFloat(dist.toFixed(1)) };
+              return { ...branch, distance: dist };
             }
             return { ...branch, distance: Infinity };
           });

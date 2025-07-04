@@ -26,16 +26,14 @@ export default function ServiceList({
 
   return (
     <FlatList
-      data={services}
-      renderItem={renderServiceItem}
-      keyExtractor={item => item.id.toString()}
-      contentContainerStyle={styles.serviceList}
-      refreshControl={
-        onRefresh ? (
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        ) : null
-      }
-    />
+  data={services}
+  renderItem={renderServiceItem}
+  keyExtractor={item => item.id.toString()}
+  contentContainerStyle={styles.serviceList}
+  refreshControl={
+    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  }
+/>
   );
 }
 

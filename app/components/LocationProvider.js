@@ -27,11 +27,11 @@ export default function LocationProvider({ children }) {
     })();
   }, []);
 
-  // 👇 Hati-hati: children harus berupa fungsi
+
   if (typeof children === 'function') {
     return children({ userLocation, loadingLocation, locationError });
   }
 
-  // Fallback jika children bukan function
+
   return null;
 }

@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
   View,
   Text,
   TextInput,
@@ -13,287 +8,236 @@ import {
   Dimensions,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { RFValue } from 'react-native-responsive-fontsize';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Header from '../components/Header';
+import { changePassword } from '../api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Feather';
-import { RFValue } from 'react-native-responsive-fontsize';
-import { changePassword } from '../api/api';
-import LoadingButton from '../components/LoadingButton'; 
 
 const { width, height } = Dimensions.get('window');
+const scale = s => (width / 375) * s;
+const vScale = s => (height / 812) * s;
+const mScale = (s, f = 0.5) => s + (scale(s) - s) * f;
 
-const ChangePasswordScreen = () => {
+export default function ChangePasswordScreen() {
   const navigation = useNavigation();
-
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [form, setForm] = useState({ old: '', new: '', confirm: '' });
   const [secure, setSecure] = useState({ old: true, new: true, confirm: true });
   const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    digit: false,
+    symbol: false,
+  });
+
+  const removeEmojis = text => text.replace(/[^\x20-\x7E]/g, '');
+
+  const checkNewPasswordCriteria = (text) => {
+    const cleaned = removeEmojis(text.replace(/\s/g, ''));
+    setForm(p => ({ ...p, new: cleaned }));
+    setErrors(p => ({ ...p, new: '' }));
+    setPasswordCriteria({
+      length: cleaned.length >= 8,
+      upper: /[A-Z]/.test(cleaned),
+      lower: /[a-z]/.test(cleaned),
+      digit: /\d/.test(cleaned),
+      symbol: /[@$!%*#?&^_\-]/.test(cleaned),
+    });
+  };
 
   const validate = () => {
     const err = {};
-
-    if (!oldPassword.trim()) err.oldPassword = 'Password lama tidak boleh kosong';
-    if (!newPassword.trim()) err.newPassword = 'Password baru tidak boleh kosong';
-    if (!confirmPassword.trim()) err.confirmPassword = 'Konfirmasi password tidak boleh kosong';
-    if (newPassword && confirmPassword && newPassword !== confirmPassword)
-      err.confirmPassword = 'Konfirmasi password tidak sama dengan password baru';
-
-    if (oldPassword && newPassword && oldPassword === newPassword)
-      err.newPassword = 'Password baru harus berbeda dari password lama';
+    if (!form.old) err.old = 'Password lama wajib diisi';
+    if (!form.new) err.new = 'Password baru wajib diisi';
+    if (!form.confirm) err.confirm = 'Konfirmasi password wajib diisi';
+    if (form.new && form.confirm && form.new !== form.confirm)
+      err.confirm = 'Konfirmasi tidak cocok';
+    if (form.old && form.new && form.old === form.new)
+      err.new = 'Password baru harus berbeda dari lama';
 
     const rules = [];
-    if (newPassword.length < 8) rules.push('minimal 8 karakter');
-    if (!/[A-Z]/.test(newPassword)) rules.push('huruf besar');
-    if (!/[a-z]/.test(newPassword)) rules.push('huruf kecil');
-    if (!/\d/.test(newPassword)) rules.push('angka');
-    if (!/[@$!%*#?&^_\-]/.test(newPassword)) rules.push('simbol');
-    if (rules.length && !err.newPassword)
-      err.newPassword = `Password harus mengandung ${rules.join(', ')}`;
+    if (form.new.length < 8) rules.push('minimal 8 karakter');
+    if (!/[A-Z]/.test(form.new)) rules.push('huruf besar');
+    if (!/[a-z]/.test(form.new)) rules.push('huruf kecil');
+    if (!/\d/.test(form.new)) rules.push('angka');
+    if (!/[@$!%*#?&^_\-]/.test(form.new)) rules.push('simbol');
 
-    return err;
+    if (rules.length && !err.new) {
+      err.new = `Password harus mengandung ${rules.join(', ')}`;
+    }
+
+    setErrors(err);
+    return Object.keys(err).length === 0;
   };
 
   const handleSubmit = async () => {
-    setIsLoading(true);
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length) {
-      setErrors(validationErrors);
-      setIsLoading(false);
-      return;
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      await changePassword(token, form.old, form.new);
+      setSuccess(true);
+    } catch (err) {
+      const msg = err?.message || '';
+      if (msg === 'Password lama tidak sesuai')
+        setErrors({ old: 'Password lama tidak sesuai' });
+      else if (msg === 'Password baru tidak boleh sama dengan lama')
+        setErrors({ new: 'Password baru tidak boleh sama' });
+      else
+        setErrors({ old: msg });
+    } finally {
+      setLoading(false);
     }
+  };
 
-try {
-  const token = await AsyncStorage.getItem('accessToken');
-  await changePassword(token, oldPassword, newPassword);
-  setErrors({});
-  setIsSuccess(true);
-} catch (err) {
-  const errorMessage = err?.message || '';
-
-  if (errorMessage === 'Password lama tidak sesuai') {
-    setErrors({ oldPassword: 'Password lama yang kamu masukkan tidak sesuai.' });
-  } else if (errorMessage === 'Password baru tidak boleh sama dengan lama') {
-    setErrors({ newPassword: 'Password baru tidak boleh sama dengan password lama.' });
-  } else {
-    setErrors({ oldPassword: errorMessage });
-  }
-} finally {
-  setIsLoading(false);
-}
-};
-
-  const renderInput = (
-    label,
-    value,
-    onChangeText,
-    secureTextEntry,
-    toggleSecure,
-    error,
-    placeholder
-  ) => (
-    <>
+  const Field = ({ label, field, placeholder, secureTextEntry, onChangeText }) => (
+    <View style={styles.fieldBox}>
       <Text style={styles.label}>{label}</Text>
-      <View style={[styles.inputContainer, error && styles.inputError]}>
+      <View style={styles.passBox}>
         <TextInput
+          style={styles.passInput}
           placeholder={placeholder}
           placeholderTextColor="#9ca3af"
           secureTextEntry={secureTextEntry}
-          allowFontScaling={false}
-          style={styles.input}
-          value={value}
-          onChangeText={(text) => {
-            onChangeText(text);
-            setErrors({});
-          }}
+          value={form[field]}
+          onChangeText={onChangeText}
+          autoCapitalize="none"
         />
-        <TouchableOpacity
-          onPress={toggleSecure}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Icon name={secureTextEntry ? 'eye-off' : 'eye'} size={RFValue(20)} color="#999" />
+        <TouchableOpacity onPress={() => setSecure(p => ({ ...p, [field]: !p[field] }))}>
+          <Icon name={secureTextEntry ? 'eye' : 'eye-off'} size={20} color="#6b7280" />
         </TouchableOpacity>
       </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
-    </>
+      {!!errors[field] && <Text style={styles.error}>{errors[field]}</Text>}
+    </View>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIcon}>
-              <Icon name="arrow-left" size={RFValue(24)} color="#000" />
-            </TouchableOpacity>
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <Header isnewPass />
+      <View style={{ flex: 1, backgroundColor: "#f6f6f6" }}>
+        <KeyboardAwareScrollView
+          enableOnAndroid
+          keyboardShouldPersistTaps="handled"
+          extraScrollHeight={Platform.OS === 'ios' ? 40 : 60}
+          contentContainerStyle={styles.scroll}
+        >
+          <Text style={styles.subtitle}>Ubah kata sandi akun kamu</Text>
+          <Field
+            label="Kata Sandi Lama"
+            field="old"
+            placeholder="Masukkan Kata Sandi Lama"
+            secureTextEntry={secure.old}
+            onChangeText={t => setForm(p => ({ ...p, old: t.replace(/\s/g, '') }))}
+          />
+          <Field
+            label="Kata Sandi Baru"
+            field="new"
+            placeholder="Masukkan Kata Sandi Baru"
+            secureTextEntry={secure.new}
+            onChangeText={checkNewPasswordCriteria}
+          />
+          <Field
+            label="Konfirmasi Kata Sandi"
+            field="confirm"
+            placeholder="Ulangi Kata Sandi"
+            secureTextEntry={secure.confirm}
+            onChangeText={t => setForm(p => ({ ...p, confirm: t.replace(/\s/g, '') }))}
+          />
 
-            <Text style={styles.title}>Ubah Password</Text>
-            <Text style={styles.subtitle}>
-              Untuk keamanan akun Anda, gunakan kombinasi huruf besar, kecil, angka, dan simbol
-            </Text>
+          <View style={styles.rulesBox}>
+            <Text style={styles.rulesText}>Password harus mengandung:</Text>
+            <RuleItem met={passwordCriteria.length} label="Minimal 8 karakter" />
+            <RuleItem met={passwordCriteria.upper && passwordCriteria.lower} label="Huruf besar dan kecil" />
+            <RuleItem met={passwordCriteria.digit} label="Angka" />
+            <RuleItem met={passwordCriteria.symbol} label="Simbol (@$!%*#?&^_-)" />
+          </View>
 
-            {renderInput(
-              'Password Lama',
-              oldPassword,
-              setOldPassword,
-              secure.old,
-              () => setSecure((prev) => ({ ...prev, old: !prev.old })),
-              errors.oldPassword,
-              'Masukkan Password Lama'
-            )}
+          {success && <Text style={[styles.success, { marginBottom: 10 }]}>Password berhasil diubah!</Text>}
+        </KeyboardAwareScrollView>
 
-            {renderInput(
-              'Password Baru',
-              newPassword,
-              setNewPassword,
-              secure.new,
-              () => setSecure((prev) => ({ ...prev, new: !prev.new })),
-              errors.newPassword,
-              'Masukkan Password Baru'
-            )}
-
-            {renderInput(
-              'Konfirmasi Password Baru',
-              confirmPassword,
-              setConfirmPassword,
-              secure.confirm,
-              () => setSecure((prev) => ({ ...prev, confirm: !prev.confirm })),
-              errors.confirmPassword,
-              'Ulangi Password Baru'
-            )}
-
-            {/* 🔄 Reusable LoadingButton */}
-            <LoadingButton
-              onPress={handleSubmit}
-              isLoading={isLoading}
-              text="Ubah"
-              style={styles.button}        // override warna & margin
-              textStyle={styles.buttonText} // konsisten dengan desain
-              disabled={isLoading}
-            />
-
-            {isSuccess && (
-              <View style={styles.successPopup}>
-                <Text style={styles.successText}>Password berhasil diubah!</Text>
-                <TouchableOpacity
-                  style={styles.successButton}
-                  onPress={() => {
-                    setIsSuccess(false);
-                    navigation.goBack();
-                  }}
-                >
-                  <Text style={styles.successButtonText}>OK</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <View style={styles.bottomArea}>
+          <TouchableOpacity
+            style={[styles.btn, loading && { opacity: 0.7 }]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Simpan</Text>}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </>
   );
-};
+}
 
-export default ChangePasswordScreen;
+const RuleItem = ({ met, label }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+    <Icon name={met ? 'check-circle' : 'close-circle'} size={16} color={met ? '#10b981' : '#ef4444'} />
+    <Text style={{ marginLeft: 8, color: met ? '#10b981' : '#ef4444', fontSize: RFValue(11) }}>{label}</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: width * 0.05,
-    paddingTop: height * 0.04,
-    paddingBottom: height * 0.05,
-  },
-  backIcon: { marginBottom: RFValue(10) },
-  title: {
-    fontSize: RFValue(20),
-    fontWeight: '700',
-    marginTop: RFValue(10),
-    color: '#000',
-  },
-  subtitle: {
-    fontSize: RFValue(14),
-    color: '#777',
-    marginVertical: RFValue(10),
-    lineHeight: RFValue(20),
-  },
-  label: {
-    fontWeight: '600',
-    marginTop: RFValue(20),
-    fontSize: RFValue(14),
-    color: '#000',
-  },
-  inputContainer: {
+  subtitle: { fontSize: mScale(16), color: '#111827', fontWeight: '600', marginBottom: vScale(12) },
+  fieldBox: { marginBottom: vScale(16) },
+  label: { fontSize: mScale(14), color: '#374151', marginBottom: vScale(6), fontWeight: '500' },
+  passBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#d1d5db',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: RFValue(10),
-    marginTop: RFValue(5),
-  },
-  input: {
-    flex: 1,
-    paddingVertical: RFValue(10),
-    fontSize: RFValue(14),
-    color: '#000',
-  },
-  inputError: { borderColor: '#ef4444' },
-  errorText: {
-    color: '#ef4444',
-    fontSize: RFValue(12),
-    marginTop: RFValue(4),
-  },
-  button: {
-    backgroundColor: '#FF7A00', // override warna default LoadingButton
-    paddingVertical: RFValue(15),
-    borderRadius: 8,
-    marginTop: RFValue(30),
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: RFValue(14),
-  },
-  successPopup: {
-    position: 'absolute',
-    top: '40%',
-    left: width * 0.05,
-    right: width * 0.05,
-    backgroundColor: '#fff',
+    borderColor: '#d1d5db',
     borderRadius: 10,
-    padding: RFValue(20),
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 6,
+    paddingHorizontal: mScale(14),
+    backgroundColor: '#fff',
   },
-  successText: {
-    fontSize: RFValue(16),
-    fontWeight: '700',
-    marginBottom: RFValue(15),
-    textAlign: 'center',
-    color: '#000',
+  passInput: { flex: 1, fontSize: mScale(14), color: '#111827' },
+  error: { color: '#ef4444', fontSize: mScale(12), marginTop: vScale(4) },
+  success: { color: '#10b981', fontSize: mScale(14), fontWeight: '600', textAlign: 'center' },
+  rulesBox: {
+    backgroundColor: '#fff',
+    borderLeftWidth: 3,
+    borderLeftColor: '#f87171',
+    paddingLeft: RFValue(12),
+    marginBottom: vScale(16),
   },
-  successButton: {
+  rulesText: { color: '#6b7280', fontSize: RFValue(12), marginBottom: RFValue(4) },
+  btn: {
     backgroundColor: '#FF7A00',
-    paddingVertical: RFValue(10),
-    paddingHorizontal: RFValue(20),
-    borderRadius: 8,
+    paddingVertical: vScale(14),
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
   },
-  successButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: RFValue(14),
+  btnText: { color: '#fff', fontSize: mScale(14), fontWeight: '600' },
+  bottomArea: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 10,
+  },
+  scroll: {
+    paddingHorizontal: mScale(20),
+    paddingTop: vScale(30),
+    paddingBottom: vScale(100),
   },
 });

@@ -38,7 +38,7 @@ export default function MapPreview({ branchId }) {
         setUserLocation(currentLocation);
 
         const response = await getAllBranches();
-        const branches = response.branches || [];
+        const branches = response.data || [];
         setAllBranches(branches);
 
        

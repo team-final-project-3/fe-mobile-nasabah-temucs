@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import Header from '../components/Header';
@@ -9,7 +8,7 @@ import Branch from '../components/Branch';
 import CustomAlert from '../components/CustomAlert';
 import NextButton from '../components/NextButton';
 import ServiceSelectionHeader from '../components/ServiceSelectionHeader';
-import ServiceList from '../components/ServiceList';
+import ServiceList from '../components/ServiceList'; 
 import { getAllServices } from '../api/api';
 
 export default function Layanan() {
@@ -21,7 +20,6 @@ export default function Layanan() {
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
   const [isAlertVisible, setIsAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,25 +46,25 @@ export default function Layanan() {
   }, []);
 
   useEffect(() => {
-    const lowercasedSearchText = searchText.toLowerCase();
+    const lowercased = searchText.toLowerCase();
     const filtered = services.filter(service =>
-      service.serviceName?.toLowerCase().includes(lowercasedSearchText)
+      service.serviceName?.toLowerCase().includes(lowercased)
     );
     setFilteredServices(filtered);
   }, [searchText, services]);
 
   const handleServiceSelect = useCallback((serviceId) => {
-    setSelectedServiceIds(prevSelected => {
-      const isSelected = prevSelected.includes(serviceId);
-      if (isSelected) {
-        return prevSelected.filter(id => id !== serviceId);
+    setSelectedServiceIds(prev => {
+      const alreadySelected = prev.includes(serviceId);
+      if (alreadySelected) {
+        return prev.filter(id => id !== serviceId);
       } else {
-        if (prevSelected.length < MAX_SELECTION) {
-          return [...prevSelected, serviceId];
+        if (prev.length < MAX_SELECTION) {
+          return [...prev, serviceId];
         } else {
           setAlertMessage(`Anda hanya dapat memilih maksimal ${MAX_SELECTION} jenis layanan.`);
           setIsAlertVisible(true);
-          return prevSelected;
+          return prev;
         }
       }
     });
@@ -78,6 +76,7 @@ export default function Layanan() {
       setIsAlertVisible(true);
       return;
     }
+    
 
     const selectedServiceNames = selectedServiceIds
       .map(id => services.find(s => s.id === id)?.serviceName)
@@ -98,7 +97,8 @@ export default function Layanan() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+    <StatusBar barStyle="light-content" backgroundColor="transparent" translucent/>
       <Header isLayanan />
 
       <View style={styles.content}>
@@ -141,7 +141,7 @@ export default function Layanan() {
           disabled={selectedServiceIds.length < MIN_SELECTION}
         />
       </View>
-    </SafeAreaView>
+    </>
   );
 }
 

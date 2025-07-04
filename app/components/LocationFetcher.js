@@ -14,7 +14,7 @@ export default function LocationFetcher({ onSuccess, onError }) {
         let location = await Location.getCurrentPositionAsync({ 
           accuracy: Location.Accuracy.High,
           timeInterval : 10000,
-          distanceInterval: 25, //-->>> 25 meter
+          distanceInterval: 25, 
         });
         onSuccess(location);
         console.log(location);

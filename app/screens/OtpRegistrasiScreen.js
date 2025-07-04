@@ -14,10 +14,11 @@ import {
   StatusBar,
   Dimensions,
   Platform,
+
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { RFValue } from 'react-native-responsive-fontsize';
-
+import Header from '../components/Header';
 import { verifyOtp, resendOtp } from '../api/api';
 import PopupError from '../components/PopupError';
 import PopupSuccess from '../components/PopupSuccess';
@@ -78,6 +79,7 @@ export default function OtpRegistrasiScreen({ navigation, route }) {
 
   const handleVerify = async () => {
     const fullOtp = otpArray.join('');
+     console.log('[OTP Verify] Kode OTP yang dimasukkan:', fullOtp);
     if (!email || fullOtp.length !== OTP_LENGTH) {
       setErrorMessage(!email ? 'Email tidak ditemukan.' : 'Semua kolom harus diisi!');
       setShowError(true);
@@ -87,6 +89,7 @@ export default function OtpRegistrasiScreen({ navigation, route }) {
     setLoadingVerify(true);
     try {
       await verifyOtp({ email, otp: fullOtp });
+      console.log('[OTP Verify] Verifikasi berhasil, pindah ke LoginScreen');
       setSuccessMessage('OTP berhasil diverifikasi!');
       setShowSuccess(true);
       setTimeout(() => {
@@ -95,7 +98,7 @@ export default function OtpRegistrasiScreen({ navigation, route }) {
       }, 1500);
     } catch (err) {
       const msg = err?.response?.data?.message || '';
-      console.log("DEBUG Backend message:", msg);
+      console.log('[OTP Verify] Verifikasi gagal, pesan dari server:', msg);
       
       if (msg.toLowerCase().includes('otp salah')) {
         setErrorMessage('Kode OTP yang kamu masukkan salah. Silakan coba lagi.');
@@ -112,17 +115,26 @@ export default function OtpRegistrasiScreen({ navigation, route }) {
     if (!email) {
       setErrorMessage('Email tidak ditemukan.');
       setShowError(true);
+      console.log('[Resend OTP] Email tidak tersedia, tidak bisa mengirim OTP.');
       return;
     }
-    if (cooldown > 0) return;
+    if (cooldown > 0) 
+    {console.log(`[Resend OTP] Tunggu ${cooldown} detik sebelum mengirim ulang.`);
+      return;}
 
     setLoadingResend(true);
+     console.log('[Resend OTP] Mengirim ulang OTP ke:', email);
     try {
       await resendOtp(email);
+
+      console.log('[Resend OTP] OTP berhasil dikirim ulang ke email');
       setSuccessMessage('Kode OTP berhasil dikirim ulang ke email.');
       setShowSuccess(true);
       setCooldown(RESEND_INTERVAL);
     } catch (err) {
+       const msg = err?.response?.data?.message || err.message;
+
+      console.log('[Resend OTP] Gagal mengirim ulang OTP:', msg);
       setErrorMessage('Gagal mengirim ulang OTP. Silakan coba beberapa saat lagi.');
       setShowError(true);
     } finally {
@@ -131,9 +143,10 @@ export default function OtpRegistrasiScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <KeyboardAvoidingView
+    <>
+    <StatusBar barStyle="light-content" backgroundColor="transparent" translucent/>
+      <Header isCekEmail/>
+        <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
@@ -143,12 +156,7 @@ export default function OtpRegistrasiScreen({ navigation, route }) {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.container}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Icon name="arrow-left" size={RFValue(24)} color="#000" />
-              </TouchableOpacity>
+              
 
               <Text style={styles.title}>Cek Email Anda</Text>
               <Text style={styles.subtitle}>
@@ -203,7 +211,7 @@ export default function OtpRegistrasiScreen({ navigation, route }) {
         message={successMessage}
         onClose={() => setShowSuccess(false)}
       />
-    </SafeAreaView>
+    </>
   );
 }
 
@@ -221,13 +229,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   title: {
     fontSize: RFValue(20),
-    fontWeight: '700',
-    marginTop: RFValue(20),
+    fontWeight: '600',
     textAlign: 'center',
     color: '#000',
   },
   subtitle: {
-    fontSize: RFValue(14),
+    fontSize: RFValue(12),
     color: '#6b7280',
     marginVertical: RFValue(10),
     textAlign: 'center',
@@ -246,18 +253,18 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     borderRadius: 8,
     textAlign: 'center',
-    fontSize: RFValue(20),
+    fontSize: RFValue(16),
     color: '#000',
   },
   button: {
     backgroundColor: '#f57c00',
-    paddingVertical: RFValue(15),
+    paddingVertical: RFValue(12),
     borderRadius: 8,
     alignItems: 'center',
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: RFValue(14),
   },
 });

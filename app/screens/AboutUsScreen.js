@@ -1,65 +1,59 @@
 import React from 'react';
 import {
-  SafeAreaView,
+  StatusBar,
   ScrollView,
   View,
   Text,
   StyleSheet,
-  StatusBar,
 } from 'react-native';
+
+import Header from '../components/Header';
 
 const AboutUsScreen = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F9F9F9" />
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true}/>
+      <Header isAboutUS/>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.card}>
-          {/* Judul */}
-          <Text style={styles.title}>TENTANG APLIKASI TEMUCS</Text>
+          
+          <Text style={styles.title}>Tentang Aplikasi TemuCS</Text>
 
-          {/* 1. Deskripsi Singkat */}
+          
           <Text style={styles.sectionTitle}>1. Deskripsi Singkat</Text>
           <Text style={styles.text}>
-TemuCS merupakan aplikasi digital yang dirancang untuk mempermudah masyarakat dalam melakukan pemesanan dan pengambilan nomor antrean secara online. Dengan menggunakan TemuCS, pengguna tidak perlu lagi datang langsung ke lokasi hanya untuk mengambil nomor antrean. Proses reservasi layanan menjadi lebih praktis, efisien, dan fleksibel, mendukung era digitalisasi layanan publik dan instansi.
+            TemuCS adalah aplikasi digital yang dirancang untuk mempermudah masyarakat dalam melakukan pemesanan dan pengambilan nomor antrean secara daring. Dengan TemuCS, pengguna tidak perlu lagi datang langsung hanya untuk mengambil nomor antrean, sehingga proses reservasi layanan menjadi lebih praktis, efisien, dan sesuai dengan era digitalisasi layanan publik.
           </Text>
 
-          {/* 2. Tujuan Pengembangan */}
+          
           <Text style={styles.sectionTitle}>2. Tujuan Pengembangan</Text>
-          <Text style={styles.text}>
-            Pengembangan aplikasi TemuCS bertujuan untuk:{'\n'}
-            • Mengurangi waktu tunggu pengguna saat mengakses layanan tatap muka.{'\n'}
-            • Mengelola alur layanan secara lebih teratur dan efisien.{'\n'}
-            • Meningkatkan kepuasan dan kenyamanan pengguna dalam memperoleh layanan.{'\n'}
-            • Memberikan solusi digital untuk pelayanan publik maupun privat yang membutuhkan sistem antrean. </Text>
+          <Text style={styles.bullet}>• Mengurangi waktu tunggu pengguna saat mengakses layanan tatap muka.</Text>
+          <Text style={styles.bullet}>• Mengelola alur layanan secara lebih terstruktur dan efisien.</Text>
+          <Text style={styles.bullet}>• Meningkatkan kenyamanan dan kepuasan pengguna dalam memperoleh layanan.</Text>
+          <Text style={styles.bullet}>• Menyediakan solusi digital untuk institusi publik maupun privat yang memerlukan sistem antrean.</Text>
 
-          {/* 3. Fitur Utama */}
+          
           <Text style={styles.sectionTitle}>3. Fitur Utama</Text>
-          <Text style={styles.text}>
-            • Pemesanan nomor antrean secara online{'\n'}
-            • Pemilihan lokasi kantor/cabang tujuan{'\n'}
-            • Notifikasi status antrean secara real-time{'\n'}
-            • Riwayat antrean sebelumnya{'\n'}
-            • Profil pengguna
-          </Text>
+          <Text style={styles.bullet}>• Pemesanan nomor antrean secara online</Text>
+          <Text style={styles.bullet}>• Pemilihan lokasi kantor atau cabang tujuan</Text>
+          <Text style={styles.bullet}>• Notifikasi status antrean secara real-time</Text>
+          <Text style={styles.bullet}>• Riwayat antrean sebelumnya</Text>
+          <Text style={styles.bullet}>• Pengelolaan profil pengguna</Text>
 
-          {/* 4. Manfaat untuk Pengguna */}
+         
           <Text style={styles.sectionTitle}>4. Manfaat untuk Pengguna</Text>
-          <Text style={styles.text}>
-            • Menghemat waktu karena tidak perlu antre manual{'\n'}
-            • Mendapatkan estimasi waktu panggilan{'\n'}
-            • Meningkatkan kenyamanan dan efisiensi dalam mengakses layanan
-          </Text>
+          <Text style={styles.bullet}>• Menghemat waktu karena tidak perlu antre secara manual</Text>
+          <Text style={styles.bullet}>• Meningkatkan efisiensi dan kenyamanan dalam mengakses layanan</Text>
 
-          {/* 5. Kontak & Bantuan */}
+          
           <Text style={styles.sectionTitle}>5. Kontak & Bantuan</Text>
           <Text style={styles.text}>
-            Jika Anda memiliki pertanyaan, masukan, atau kendala penggunaan, silakan hubungi kami
-            melalui email:{'\n'}
-            <Text style={styles.link}>support@temuCS.com</Text>
+            Jika Anda memiliki pertanyaan, masukan, atau kendala terkait penggunaan aplikasi, silakan hubungi kami melalui email:
+            <Text style={styles.link}> temucs326@gmail.com</Text>
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </>
   );
 };
 
@@ -72,36 +66,48 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: 16,
+    paddingBottom: 32,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#F6F6F6',
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 16,
-    color: '#333',
+    marginBottom: 20,
+    color: '#1F2937',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginTop: 12,
+    marginTop: 2,
     marginBottom: 6,
-    color: '#000000',
+    color: '#111827',
   },
   text: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 20,
-    textAlign: 'justify'
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 22,
+    textAlign: 'justify',
+  },
+  bullet: {
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 22,
+    textAlign: 'justify',
+    marginBottom: 6,
+  },
+  link: {
+    color: '#1D4ED8',
+    textDecorationLine: 'underline',
   },
 });

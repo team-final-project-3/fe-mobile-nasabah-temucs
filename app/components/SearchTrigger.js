@@ -1,14 +1,13 @@
-// app/components/SearchTrigger.js
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Menggunakan Ionicons untuk ikon search
+import { Ionicons } from '@expo/vector-icons'; 
 import { useNavigation } from '@react-navigation/native';
 
 export default function SearchTrigger({ placeholder = "Cari lokasi, antrean, atau layanan" }) {
   const navigation = useNavigation();
 
   const handlePress = () => {
-    navigation.navigate('Search'); // Navigasi ke halaman Search
+    navigation.navigate('Search');
   };
 
   return (

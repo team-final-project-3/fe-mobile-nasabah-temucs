@@ -1,68 +1,43 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 
-
 import Header from '../components/Header';
-import TicketCard from '../components/TicketCard';
-import TicketDetailSection from '../components/TicketDetailSection';
-import TicketBranchDetail from '../components/TicketBranchDetail';
-import TicketServiceDetail from '../components/TicketServiceDetail';
-import QueueSummaryFetcher from '../components/QueueSummaryFetcher.js';
 import RefreshableScreen from '../components/RefreshableScreen';
+import TicketSummaryCard from '../components/TicketSummaryCard';
 import { getQueueTicketById } from '../api/api';
-import NextButton from '../components/NextButton';
 
 export const Tiket = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { ticketId } = route.params || {};
+  const { ticketId, documents = [] } = route.params || {};
 
-  const [ticket, setTicket] = useState({});
+  const [ticketData, setTicketData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [ticketData, setTicketData] = useState({}); 
   const [userLocationData, setUserLocation] = useState(null);
-
-  const [countdown, setCountdown] = useState('');
   const [estimatedTime, setEstimatedTime] = useState(null);
+  const [countdown, setCountdown] = useState('');
   const [formattedEstimatedDateTime, setFormattedEstimatedDateTime] = useState('');
-  const HomeScreen = () => navigation.navigate('Main'); 
 
   const intervalRef = useRef();
 
   useEffect(() => {
-      const fetchUserLocation = async () => {
-        if (userLocationData) return; 
-    
-        try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status !== 'granted') return;
-    
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
-          setUserLocation(location);
-        } catch (err) {
-          console.warn('Gagal mengambil lokasi:', err.message);
-          setUserLocation(null);
-        }
-      };
-    
-      fetchUserLocation();
-    }, []);
+    const fetchUserLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        setUserLocation(location);
+      } catch (err) {
+        console.warn('Gagal ambil lokasi:', err.message);
+        setUserLocation(null);
+      }
+    };
 
-    const {
-      ticketNumber,
-      branch: branchData,
-      services = [],
-      requiredDocuments = [],
-      userLocation,
-      status
-    } = ticketData;
-
+    fetchUserLocation();
+  }, []);
 
   const fetchTicket = async () => {
     if (!ticketId) {
@@ -74,27 +49,30 @@ export const Tiket = () => {
     try {
       setLoading(true);
       const data = await getQueueTicketById(ticketId);
-      console.log('RESPON API:', data);
-      setTicketData(data.ticket || data);
+      const ticket = data.ticket || data;
+      setTicketData(ticket);
 
-      
+      const isoTime = ticket.estimatedTime;
 
-      const isoTime = data.ticket?.estimatedTime || data?.estimatedTime;
+      if (!isoTime) {
+        setEstimatedTime(null);
+        setFormattedEstimatedDateTime('');
+        return;
+      }
+
       setEstimatedTime(isoTime);
 
-      if (isoTime) {
-        const formatted = new Date(isoTime).toLocaleString('id-ID', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        setFormattedEstimatedDateTime(formatted);
-      }
+      const formatted = new Date(isoTime).toLocaleString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      setFormattedEstimatedDateTime(formatted);
     } catch (err) {
-      console.error('Error saat ambil tiket:', err.response?.data || err.message);
+      console.error('Gagal memuat tiket:', err.response?.data || err.message);
       setError('Gagal memuat data tiket.');
     } finally {
       setLoading(false);
@@ -122,7 +100,7 @@ export const Tiket = () => {
       const distance = target - now;
 
       if (distance <= 0) {
-        setCountdown('Sekarang giliran anda');
+        setCountdown('Segera datang ke cabang');
         clearInterval(intervalRef.current);
         return;
       }
@@ -131,17 +109,11 @@ export const Tiket = () => {
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-      setCountdown(
-        `${hours.toString().padStart(2, '0')} : ${minutes
-          .toString()
-          .padStart(2, '0')} : ${seconds.toString().padStart(2, '0')}`
-      );
+      setCountdown(`${hours.toString().padStart(2, '0')} : ${minutes.toString().padStart(2, '0')} : ${seconds.toString().padStart(2, '0')}`);
     }, 1000);
 
     return () => clearInterval(intervalRef.current);
   }, [estimatedTime]);
-
-  const handleGoHome = () => navigation.navigate('Main');
 
   const currentDate = new Date().toLocaleDateString('id-ID', {
     day: '2-digit',
@@ -149,17 +121,10 @@ export const Tiket = () => {
     year: 'numeric',
   });
 
-  const getServiceNames = (serviceList) => {
-    if (!Array.isArray(serviceList)) return [];
-    return serviceList.map(service => {
-      if (typeof service === 'string') return service;
-      return service?.serviceName || service?.name || 'Layanan Tidak Diketahui';
-    });
-  };
-
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <RefreshableScreen onRefresh={handleRefresh}>
           <Header isTiket />
           <View style={styles.centeredContent}>
@@ -167,88 +132,68 @@ export const Tiket = () => {
             <Text style={styles.loadingText}>Memuat detail antrean...</Text>
           </View>
         </RefreshableScreen>
-      </SafeAreaView>
+      </>
     );
   }
 
   if (error || !ticketData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Header isTiket/>
+      <>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <Header isTiket />
         <View style={styles.errorFullContent}>
           <Text style={styles.errorText}>{error || 'Data antrean tidak tersedia.'}</Text>
         </View>
-      </SafeAreaView>
+      </>
     );
   }
 
-
-
-  const selectedServiceNames = getServiceNames(services);
-
   return (
-    <SafeAreaView style={styles.container}>
-       <Header isTiket />
-      <RefreshableScreen onRefresh={fetchTicket}>
-       
-
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <Header isTiket />
+      <RefreshableScreen onRefresh={handleRefresh}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <TicketDetailSection title="Cabang Terpilih">
-          <TicketBranchDetail branchData={branchData} userLocationData={userLocation} />
-          </TicketDetailSection>
-
-          <TicketCard
-            status={status}
-            bankName="Bank Negara Indonesia"
-            branchName={`Kantor Cabang ${branchData?.name || 'Tidak Dikenal'}`}
-            queueNumber={ticketNumber || 'Loading'}
-            ticketDate={currentDate}
-            estimatedTime={formattedEstimatedDateTime}
+          <TicketSummaryCard
+            ticketData={ticketData}
             countdown={countdown}
+            estimatedTimeFormatted={formattedEstimatedDateTime}
+            currentDate={currentDate}
+            userLocationData={userLocationData}
+            documents={documents}
           />
-          
 
-          <TicketDetailSection title="Jenis Layanan">
-            <TicketServiceDetail selectedServiceNames={services.map(service => service.serviceName)} />
-          </TicketDetailSection>
 
-          {(status === 'waiting' || status === 'in_progress') && branchData?.id && (
-            <QueueSummaryFetcher branchId={branchData.id} showWaiting={true} />
-          )}
-
-          {(status === 'waiting' || status === 'in_progress') && (
-            <TicketDetailSection title="Antrean Anda Saat Ini">
-              <View style={{ backgroundColor: '#E5F3FF', padding: 12, borderRadius: 8 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>
-                  Nomor Tiket: {ticketNumber}
-                </Text>
-                <Text style={{ fontSize: 14, marginBottom: 2 }}>Status: {status}</Text>
-                <Text style={{ fontSize: 14, marginBottom: 2 }}>
-                  Estimasi Dilayani: {formattedEstimatedDateTime || '-'}
-                </Text>
-                <Text style={{ fontSize: 14 }}>Hitung Mundur: {countdown}</Text>
-              </View>
-            </TicketDetailSection>
-          )}
-
-         
         </ScrollView>
-
       </RefreshableScreen>
 
-        
-    </SafeAreaView>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('Main')}
+        >
+          <Text style={styles.text}>Kembali ke Beranda</Text>
+        </TouchableOpacity>
+      </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
+    paddingBottom: 0,
+  },
+  button: {
+    backgroundColor: '#F27F0C',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  text: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   centeredContent: {
     flex: 1,
@@ -275,10 +220,29 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#f0f2f5',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    backgroundColor: '#fff',
-    marginTop: 'auto',
+  },
+  documentsContainer: {
+    marginTop: 24,
+    paddingHorizontal: 4,
+  },
+  documentsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#1E4064',
+  },
+  documentItem: {
+    fontSize: 16,
+    marginLeft: 8,
+    marginBottom: 4,
+  },
+  noDocuments: {
+    fontStyle: 'italic',
+    color: 'gray',
   },
 });

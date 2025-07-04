@@ -3,6 +3,12 @@ import { TouchableOpacity, Text } from "react-native";
 import { LogOut } from "lucide-react-native";
 
 const LogoutButton = ({ onPress }) => {
+  const handlePress = () => {
+    console.log('[LogoutButton] Tombol Keluar ditekan');
+    if (onPress) {
+      onPress();
+    }
+  };
   return (
     <TouchableOpacity
       style={{

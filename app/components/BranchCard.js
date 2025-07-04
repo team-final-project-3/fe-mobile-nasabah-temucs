@@ -1,46 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { calculateDistance } from '../utils/distanceCalculator';
-import { getAllQueues } from '../api/api';
 
 export default function BranchCard({ data, userLocation, onPress }) {
   const [distanceToBranch, setDistanceToBranch] = useState('...');
   const [totalQueue, setTotalQueue] = useState(0);
 
   useEffect(() => {
-    const fetchQueueData = async () => {
-      try {
-        const allQueues = await getAllQueues();
-        const branchQueues = allQueues.filter(q => q.branchId === data.id);
-        const inProgress = branchQueues.filter(q => q.status === 'in progress');
-        const waitingList = branchQueues.filter(q => q.status === 'waiting');
-        setTotalQueue(inProgress.length + waitingList.length);
-      } catch {
-        setTotalQueue(0);
-      }
-    };
-    if (data?.id) fetchQueueData();
-  }, [data?.id]);
+    setTotalQueue(typeof data.activeQueueCount === 'number' ? data.activeQueueCount : 0);
+  }, [data.activeQueueCount]);
 
   useEffect(() => {
-    if (userLocation?.coords && data.latitude && data.longitude) {
-      const dist = calculateDistance(
-        userLocation.coords.latitude,
-        userLocation.coords.longitude,
-        data.latitude,
-        data.longitude
-      );
-      setDistanceToBranch(`${dist.toFixed(1)} km`);
-    } else if (data.distance !== undefined) {
-      setDistanceToBranch(`${data.distance.toFixed(1)} km`);
+    if (typeof data.distance === 'number') {
+      let formatted = '';
+  
+      if (data.distance >= 1000) {
+        formatted = `${(data.distance / 1000).toFixed(1)} rb km`;
+      } else {
+        formatted = `${data.distance.toFixed(1)} km`;
+      }
+  
+      setDistanceToBranch(formatted);
     } else {
       setDistanceToBranch('...');
     }
-  }, [userLocation, data]);
+  }, [data.distance]);
+  
 
   return (
-    <TouchableOpacity onPress={data.status ? onPress : null} activeOpacity={data.status ? 0.8 : 1}>
+    <TouchableOpacity onPress={data.status ? onPress : null} activeOpacity={data.status ? 0.925 : 1}>
       <View style={styles.card}>
         {!data.status && <View style={styles.overlay} pointerEvents="none" />}
         <View style={styles.rowContainer}>
@@ -73,14 +61,14 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.01,
+    shadowRadius: 1,
+    elevation: 1,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+    backgroundColor: '#fffff',
     borderRadius: 16,
     zIndex: 10,
   },
@@ -104,7 +92,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    fontWeight: 'bold',
+    fontWeight: '500',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 6,
@@ -118,7 +106,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    fontWeight: 'bold',
+    fontWeight: '500',
     fontSize: 14,
     textAlign: 'center',
   },

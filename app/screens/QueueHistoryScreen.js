@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, ActivityIndicator, StatusBar } from 'react-native';
 import Header from '../components/Header';
 import QueueList from '../components/QueueList';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { getQueueHistory } from '../api/api';
+import SearchBar from '../components/SearchBar';
+import { TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function QueueHistoryScreen() {
   const [queues, setQueues] = useState([]);
+  const [filteredQueues, setFilteredQueues] = useState([]);
+  const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -18,6 +22,14 @@ export default function QueueHistoryScreen() {
 
       if (response?.success && Array.isArray(response.data)) {
         setQueues(response.data);
+        if (searchText.trim()) {
+          const filtered = response.data.filter((item) =>
+            item.branch?.name?.toLowerCase().includes(searchText.toLowerCase())
+          );
+          setFilteredQueues(filtered);
+        } else {
+          setFilteredQueues(response.data);
+        }
       } else {
         throw new Error('Data tidak valid');
       }
@@ -34,43 +46,103 @@ export default function QueueHistoryScreen() {
     fetchHistory();
   }, []);
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     setRefreshing(true);
     setError(null);
-    await fetchHistory();
+    fetchHistory();
+  };
+
+  const handleSearch = (text) => {
+    setSearchText(text);
+    if (text.trim().length === 0) {
+      setFilteredQueues(queues);
+      return;
+    }
+
+    const filtered = queues.filter((item) =>
+      item.branch?.name?.toLowerCase().includes(text.toLowerCase())
+    );
+    setFilteredQueues(filtered);
+  };
+
+  const handleClearSearch = () => {
+    setSearchText('');
+    setFilteredQueues(queues);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={{ flex: 1, backgroundColor: '#F6F6F6' }}>
+    <StatusBar barStyle="light-content" backgroundColor="transparent" translucent/>
       <Header isHistory />
       <View style={styles.container}>
+        <View style={styles.searchBarWrapper}>
+          <SearchBar
+            searchText={searchText}
+            onSearchTextChange={handleSearch}
+            placeholder="Cari cabang"
+            containerStyle={{ flex: 1 }}
+            inputStyle={styles.searchBarInput}
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="gray" />
+            </TouchableOpacity>
+          )}
+        </View>
+
         {loading ? (
           <ActivityIndicator size="large" color="#1E4064" />
         ) : error ? (
           <Text style={styles.emptyText}>{error}</Text>
-        ) : queues.length > 0 ? (
-          <QueueList queues={queues} onRefresh={handleRefresh} refreshing={refreshing} />
+        ) : filteredQueues.length > 0 ? (
+          <QueueList
+            queues={filteredQueues}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
+          />
         ) : (
-          <Text style={styles.emptyText}>Belum ada riwayat antrean.</Text>
+          <Text style={styles.emptyText}>
+            {searchText
+              ? `Tidak ditemukan hasil untuk "${searchText}".`
+              : 'Belum ada riwayat antrean.'}
+          </Text>
         )}
       </View>
-    </SafeAreaView>
+
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f4f4f4',
-  },
   container: {
-    flex: 1,
-    paddingBottom: 20,
+    marginBottom: 175,
+    paddingBottom: 16,
+  },
+  searchBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  clearButton: {
+    marginLeft: 8,
+    padding: 5,
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 10,
     fontSize: 16,
     color: '#666',
+    paddingHorizontal: 20,
+  },
+  searchBarInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 40,
   },
 });

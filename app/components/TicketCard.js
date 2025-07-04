@@ -22,7 +22,7 @@ const TicketCard = ({ status, bankName, countdown, branchName, queueNumber, esti
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Siap siap gais</Text>
+            <Text style={styles.sectionTitle}>Bersiaplah</Text>
             <Text style={styles.countdown}>{countdown}</Text>
           </View>
         </>

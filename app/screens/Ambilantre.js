@@ -1,7 +1,6 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 
 import RefreshableScreen from '../components/RefreshableScreen';
@@ -9,8 +8,7 @@ import Header from '../components/Header';
 import Branch from '../components/Branch';
 import MapPreview from '../components/MapPreview';
 import NextButton from '../components/NextButton';
-import QueueSummaryFetcher from '../components/QueueSummaryFetcher.js';
-
+import QueueSummaryFetcher from '../components/QueueSummaryFetcher';
 
 export default function Ambilantre() {
   const route = useRoute();
@@ -19,10 +17,10 @@ export default function Ambilantre() {
 
   const [userLocation, setUserLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const [loadingBranch, setLoadingBranch] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedBranchData, setSelectedBranchData] = useState(null);
-
 
   const fetchLocation = useCallback(async () => {
     try {
@@ -39,7 +37,6 @@ export default function Ambilantre() {
       });
       setUserLocation(location);
     } catch (err) {
-      console.error('Gagal ambil lokasi:', err.message);
       setErrorMessage('Tidak dapat mengambil lokasi Anda. Pastikan GPS aktif.');
     } finally {
       setLoadingLocation(false);
@@ -49,17 +46,27 @@ export default function Ambilantre() {
   useEffect(() => {
     setErrorMessage('');
     setLoadingLocation(true);
+    setLoadingBranch(true);
     setUserLocation(null);
-
+    setSelectedBranchData(null);
     fetchLocation();
   }, [refreshKey, fetchLocation]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loadingBranch) {
+        setLoadingBranch(false);
+      }
+    }, 10000);
+    return () => clearTimeout(timeout);
+  }, [loadingBranch]);
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
   const handleNextPress = () => {
-    if (!branchId || !userLocation?.coords || loadingLocation) {
+    if (!branchId || !userLocation?.coords || loadingLocation || loadingBranch || !selectedBranchData) {
       setErrorMessage('Data cabang atau lokasi belum lengkap. Harap tunggu atau periksa izin lokasi.');
       return;
     }
@@ -71,40 +78,53 @@ export default function Ambilantre() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <Header isAmbilAntrean />
 
-      {loadingLocation ? (
+      {loadingLocation || loadingBranch ? (
         <View style={styles.fullScreenLoader}>
           <ActivityIndicator size="large" color="#1E4064" />
           <Text style={styles.loadingText}>
-            Mendeteksi lokasi Anda...
+            {loadingLocation ? 'Mendeteksi lokasi Anda...' : 'Memuat data cabang...'}
           </Text>
         </View>
       ) : (
         <>
           <RefreshableScreen onRefresh={handleRefresh}>
             <View style={styles.content}>
-              {!errorMessage && branchId && (
+              {!errorMessage && branchId ? (
                 <>
-                <Branch branchId={branchId} 
-                userLocation={userLocation} 
-                isPressable={false} onLoaded={(branch) => setSelectedBranchData(branch)} />
-
-
-                  <QueueSummaryFetcher
+                  <Branch
                     branchId={branchId}
-                    showWaiting={false}
-                    layoutMode="horizontal"
+                    userLocation={userLocation}
+                    isPressable={false}
+                    onLoaded={(branch) => {
+                      setSelectedBranchData(branch);
+                      setLoadingBranch(false);
+                    }}
                   />
 
-                  <View style={styles.mapContainer}>
-                    <MapPreview branchId={branchId} />
-                  </View>
+                  {selectedBranchData && (
+                    <>
+                      <View style={styles.queue}>
+                        <QueueSummaryFetcher
+                          branchId={branchId}
+                          showWaiting={false}
+                          layoutMode="horizontal"
+                        />
+                      </View>
+
+                      <View style={styles.mapContainer}>
+                        <MapPreview branchId={branchId} />
+                      </View>
+                    </>
+                  )}
                 </>
-              )}
-              {!!errorMessage && (
-                <Text style={{ color: 'red', textAlign: 'center', marginTop: 16 }}>{errorMessage}</Text>
+              ) : (
+                <Text style={{ color: 'red', textAlign: 'center', marginTop: 16 }}>
+                  {errorMessage || 'Cabang tidak ditemukan atau terjadi masalah saat memuat data.'}
+                </Text>
               )}
             </View>
           </RefreshableScreen>
@@ -112,12 +132,12 @@ export default function Ambilantre() {
           <View style={styles.buttonContainer}>
             <NextButton
               onPress={handleNextPress}
-              disabled={loadingLocation || !userLocation?.coords}
+              disabled={loadingLocation || loadingBranch || !userLocation?.coords || !selectedBranchData}
             />
           </View>
         </>
       )}
-    </SafeAreaView>
+    </>
   );
 }
 
@@ -136,8 +156,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     flex: 1,
   },
+  queue: {
+    flex: 1,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
   buttonContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#f0f2f5',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
   fullScreenLoader: {
     flex: 1,

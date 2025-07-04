@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QueueSummaryContainer from './QueueSummaryContainer';
-import { getAllQueues } from '../api/api';
+import { getBranchById } from '../api/api';
 
 export default function QueueSummaryFetcher({ branchId, showWaiting = true, layoutMode = 'horizontal' }) {
   const [loading, setLoading] = useState(true);
@@ -14,44 +14,38 @@ export default function QueueSummaryFetcher({ branchId, showWaiting = true, layo
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const queues = await getAllQueues();
-        if (!Array.isArray(queues)) {
-          console.error('Data antrean bukan array:', queues);
+        console.log('branchId yang diterima:', branchId);
+        const response = await getBranchById(branchId);
+        console.log('Response dari getBranchById:', response);
+
+        const branch = response?.branch || response;
+        if (!branch) {
+          console.error('Data cabang tidak valid:', response);
+          setLoading(false);
           return;
         }
+
+        setLastServed(branch.lastInProgressTicket?.ticketNumber || '-');
+        setWaiting(branch.activeQueueCount || 0);
+        setTotalQueue(branch.activeQueueCount || 0);
 
         const userId = await AsyncStorage.getItem('userId');
-        if (!userId) {
-          console.warn('User belum login atau userId tidak ditemukan');
-          return;
+        if (userId) {
+          setCurrentUserQueue(null);
         }
-
-        const branchQueues = queues.filter(q => q.branchId === branchId);
-
-        const inProgress = branchQueues.filter(q => q.status === 'in progress');
-        const waitingList = branchQueues.filter(q => q.status === 'waiting');
-        // const served = branchQueues.filter(q => ['served', 'done'].includes(q.status));
-
-        const last = inProgress.length > 0 ? inProgress[inProgress.length - 1].ticketNumber : '-';
-
-        const userQueue = branchQueues.find(
-          q => q.userId === parseInt(userId) && ['waiting', 'inprogress'].includes(q.status)
-        );
-
-        const totalActive = inProgress.length + waitingList.length;
-
-        setLastServed(last);
-        setWaiting(totalActive);
-        setTotalQueue(totalActive); 
-        setCurrentUserQueue(userQueue || null);
       } catch (err) {
-        console.error('Gagal ambil antrean:', err);
+        console.error('Gagal ambil data cabang:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    if (branchId) fetchData();
+    if (branchId) {
+      fetchData();
+    } else {
+      console.warn('branchId tidak tersedia, tidak bisa memuat data');
+      setLoading(false);
+    }
   }, [branchId]);
 
   if (loading) {

@@ -2,9 +2,11 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
 import { CaseSensitive, CloudSnow } from 'lucide-react-native';
+import Constants from 'expo-constants';
 
 
-const BASE_URL = 'https://temucs-tzaoj.ondigitalocean.app/api/';
+//const BASE_URL = 'https://temucs-tzaoj.ondigitalocean.app/api/';
+const BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -23,29 +25,29 @@ api.interceptors.request.use(async (config) => {
 
 
 
-export const login = async (username, password) => {
-  try {
-    const response = await api.post('/users/login', { username, password });
-    const { token } = response.data;
+// export const login = async (username, password) => {
+//   try {
+//     const response = await api.post('/users/login', { username, password });
+//     const { token } = response.data;
 
-    console.log("Token dari login:", token);
+//     console.log("Token dari login:", token);
 
-    const decoded = jwtDecode(token); 
-    console.log("Decoded JWT:", decoded);
+//     const decoded = jwtDecode(token); 
+//     console.log("Decoded JWT:", decoded);
 
-    await AsyncStorage.setItem('authToken', token);
-    await AsyncStorage.setItem('userData', JSON.stringify(decoded));
+//     await AsyncStorage.setItem('authToken', token);
+//     await AsyncStorage.setItem('userData', JSON.stringify(decoded));
 
-    return { success: true, token, user: decoded };
+//     return { success: true, token, user: decoded };
 
-  } catch (error) {
-    console.error('Login gagal:', error.response?.data || error.message);
-    return {
-      success: false,
-      message: error.response?.data?.message || 'Login gagal',
-    };
-  }
-};
+//   } catch (error) {
+//     console.error('Login gagal:', error.response?.data || error.message);
+//     return {
+//       success: false,
+//       message: error.response?.data?.message || 'Login gagal',
+//     };
+//   }
+// };
 
 export const registerUser = async (payload) => {
   try {
@@ -150,7 +152,7 @@ export const getStoredUser = async () => {
     const response = await api.get('/users/profile');
     return response.data;
   } catch (err) {
-    console.error('Gagal ambil profile user:', err);
+    
     return null;
   }
 };
@@ -217,15 +219,7 @@ export const getAllBranches = async () => {
   }
 };
 
-export const getBranchById = async (branchId) => {
-  try {
-    const response = await api.get(`/branch/${branchId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Gagal ambil detail cabang:', error.response?.data || error.message);
-    throw error;
-  }
-};
+
 
 export const getAllServices = async () => {
   try {
@@ -323,5 +317,77 @@ export const getAllQueues = async () => {
   }
 };
 
+export const getBranchById = async (branchId) => {
+  try {
+    const response = await api.get(`/branch/${branchId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Gagal ambil detail cabang:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const login = async (username, password) => {
+  try {
+    const response = await api.post('/users/login', { username, password });
+    
+    const token = response?.data?.token;
+    if (!token) {
+      console.log('❌ Tidak ada token dari response login:', response?.data);
+      return {
+        success: false,
+        message: 'Login gagal: Token tidak diberikan oleh server',
+      };
+    }
+
+    console.log("Token dari login:", token);
+    const decoded = jwtDecode(token);
+    console.log("Decoded JWT:", decoded);
+
+    await AsyncStorage.setItem('authToken', token);
+    await AsyncStorage.setItem('userData', JSON.stringify(decoded));
+
+    // Kirim push token jika sudah ada
+    const storedPushToken = await AsyncStorage.getItem('expoPushToken');
+    if (storedPushToken) {
+      console.log("Mengirim Expo push token ke backend...");
+      await sendExpoPushToken(storedPushToken);
+    }
+
+    return { success: true, token, user: decoded };
+  } catch (error) {
+    console.error('Login gagal:', error.response?.data || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Login gagal',
+    };
+  }
+};
 
 
+// Fungsi kirim push token
+export const sendExpoPushToken = async (expoPushToken) => {
+  console.log("666");
+  
+  try {
+    console.log("777");
+    
+    const authToken = await AsyncStorage.getItem('authToken');
+    console.log('Mengirim token ke backend:', expoPushToken);
+
+    const response = await axios.post(`${BASE_URL}users/expo-token`, {
+      expoPushToken: expoPushToken,
+    }, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('Push token berhasil dikirim:', response.data);
+  } catch (error) {
+    console.log(error, "888");
+    
+    console.log('Gagal kirim token:', error.response?.data || error.message);
+  }
+};

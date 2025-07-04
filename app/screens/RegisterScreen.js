@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -10,14 +9,13 @@ import {
   Dimensions,
   Platform,
   StatusBar,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { RFValue } from 'react-native-responsive-fontsize';
 import { useNavigation } from '@react-navigation/native';
 import { registerUser } from '../api/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Header from '../components/Header';
 
 const { width, height } = Dimensions.get('window');
 const scale = s => (width / 375) * s;
@@ -35,10 +33,19 @@ export default function RegisterScreen() {
     email: '',
     phone: '',
     password: '',
+    confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
   const [securePassword, setSecurePassword] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    digit: false,
+    symbol: false,
+  });
 
   const handleChange = (field, val) => {
     let cleaned = val;
@@ -48,6 +55,22 @@ export default function RegisterScreen() {
 
     setForm(p => ({ ...p, [field]: cleaned }));
     setErrors(p => ({ ...p, [field]: '' }));
+  };
+
+  const removeEmojis = text => text.replace(/[^\x20-\x7E]/g, '');
+
+  const checkPasswordCriteria = (text) => {
+    const cleaned = removeEmojis(text.replace(/\s/g, ''));
+    setForm(p => ({ ...p, password: cleaned }));
+    setErrors(p => ({ ...p, password: '' }));
+
+    setPasswordCriteria({
+      length: cleaned.length >= 8,
+      upper: /[A-Z]/.test(cleaned),
+      lower: /[a-z]/.test(cleaned),
+      digit: /\d/.test(cleaned),
+      symbol: /[@$!%*#?&^_\-]/.test(cleaned),
+    });
   };
 
   const validate = () => {
@@ -75,6 +98,12 @@ export default function RegisterScreen() {
       ];
       const fail = checks.filter(c => !c.r.test(password)).map(c => c.m);
       if (fail.length) nErr.password = `Kata sandi harus mengandung ${fail.join(', ')}`;
+    }
+
+    if (!form.confirmPassword) {
+      nErr.confirmPassword = 'Konfirmasi kata sandi wajib diisi';
+    } else if (form.confirmPassword !== form.password) {
+      nErr.confirmPassword = 'Konfirmasi kata sandi tidak cocok';
     }
 
     setErrors(nErr);
@@ -131,178 +160,201 @@ export default function RegisterScreen() {
   };
 
   const fields = [
-    { l: 'Nama lengkap', k: 'fullName', p: 'Masukkan Nama Lengkap' },
+    { l: 'Nama Lengkap', k: 'fullName', p: 'Masukkan Nama Lengkap' },
     { l: 'Username', k: 'username', p: 'Masukkan Username', type: 'default' },
     { l: 'Email', k: 'email', p: 'Masukkan Email', type: 'email-address' },
     { l: 'No Telepon', k: 'phone', p: 'Masukkan No Telepon', type: 'phone-pad' },
   ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={{ flex: 1 }}>
-            <KeyboardAwareScrollView
-              ref={scrollRef}
-              enableOnAndroid
-              extraScrollHeight={0}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.scroll}
-            >
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backBtn}
-              >
-                <Icon name="arrow-left" size={mScale(24)} color="#000" />
-              </TouchableOpacity>
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <Header isDaftar />
+      <View style={{ flex: 1, backgroundColor: "#f6f6f6" }}>
+        <KeyboardAwareScrollView
+          ref={scrollRef}
+          enableOnAndroid
+          keyboardShouldPersistTaps="handled"
+          extraScrollHeight={Platform.OS === 'ios' ? 40 : 60}
+          contentContainerStyle={styles.scroll}
+        >
+          <Text style={styles.subtitle}>Buat akun temuCS kamu</Text>
 
-              <Text style={styles.title}>Daftar</Text>
-              <Text style={styles.subtitle}>Buat akun temuCS kamu</Text>
+          {fields.map(({ l, k, p, type }) => (
+            <View key={k} style={styles.fieldBox}>
+              <Text style={styles.label}>{l}</Text>
+              <TextInput
+                ref={r => (inputRefs.current[k] = r)}
+                style={styles.input}
+                placeholder={p}
+                placeholderTextColor="#9ca3af"
+                value={form[k]}
+                onChangeText={t => handleChange(k, t)}
+                keyboardType={type}
+                autoCapitalize="none"
+              />
+              {!!errors[k] && <Text style={styles.error}>{errors[k]}</Text>}
+            </View>
+          ))}
 
-              {fields.map(({ l, k, p, type }) => (
-                <View key={k} style={styles.fieldBox}>
-                  <Text style={styles.label}>{l}</Text>
-                  <TextInput
-                    ref={r => (inputRefs.current[k] = r)}
-                    style={styles.input}
-                    placeholder={p}
-                    placeholderTextColor="#9ca3af"
-                    value={form[k]}
-                    onChangeText={t => handleChange(k, t)}
-                    keyboardType={type}
-                    allowFontScaling={false}
-                    autoCapitalize="none"
-                    onFocus={() =>
-                      scrollRef.current?.scrollToFocusedInput(inputRefs.current[k], 100)
-                    }
-                  />
-                  {!!errors[k] && <Text style={styles.error}>{errors[k]}</Text>}
-                </View>
-              ))}
-
-              <View style={styles.fieldBox}>
-                <Text style={styles.label}>Kata Sandi</Text>
-                <View style={styles.passBox}>
-                  <TextInput
-                    ref={r => (inputRefs.current.password = r)}
-                    style={styles.passInput}
-                    placeholder="Buat Kata Sandi"
-                    placeholderTextColor="#9ca3af"
-                    secureTextEntry={securePassword}
-                    value={form.password}
-                    onChangeText={t => handleChange('password', t)}
-                    allowFontScaling={false}
-                    autoCapitalize="none"
-                    onFocus={() =>
-                      scrollRef.current?.scrollToFocusedInput(inputRefs.current.password, 100)
-                    }
-                  />
-                  <TouchableOpacity onPress={() => setSecurePassword(p => !p)}>
-                    <Icon name={securePassword ? 'eye-off' : 'eye'} size={20} color="#999" />
-                  </TouchableOpacity>
-                </View>
-                {!!errors.password && <Text style={styles.error}>{errors.password}</Text>}
-              </View>
-
-              {!!errors.general && <Text style={styles.error}>{errors.general}</Text>}
-
-              {/* Spacer biar ga mentok */}
-              <View style={{ height: 10 }} />
-            </KeyboardAwareScrollView>
-
-            {/* Tombol tetap di bawah layar */}
-            <View style={styles.bottomArea}>
-              <TouchableOpacity
-                style={[styles.btn, loading && { opacity: 0.7 }]}
-                onPress={handleRegister}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.btnText}>Daftar</Text>
-                )}
+          {/* Password */}
+          <View style={styles.fieldBox}>
+            <Text style={styles.label}>Kata Sandi</Text>
+            <View style={styles.passBox}>
+              <TextInput
+                style={styles.passInput}
+                placeholder="Buat Kata Sandi"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry={securePassword}
+                keyboardType="visible-password"
+                value={form.password}
+                onChangeText={checkPasswordCriteria}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity onPress={() => setSecurePassword(p => !p)}>
+                <Icon name={securePassword ? 'eye' : 'eye-off'} size={20} color="#6b7280" />
               </TouchableOpacity>
             </View>
+            {!!errors.password && <Text style={styles.error}>{errors.password}</Text>}
           </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+          {/* Confirm Password */}
+          <View style={styles.fieldBox}>
+            <Text style={styles.label}>Konfirmasi Kata Sandi</Text>
+            <View style={styles.passBox}>
+              <TextInput
+                style={styles.passInput}
+                placeholder="Ulangi Kata Sandi"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry={securePassword}
+                value={form.confirmPassword}
+                onChangeText={t => {
+                  const cleaned = removeEmojis(t.replace(/\s/g, ''));
+                  handleChange('confirmPassword', cleaned);
+                }}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity onPress={() => setSecurePassword(p => !p)}>
+                <Icon name={securePassword ? 'eye' : 'eye-off'} size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            {!!errors.confirmPassword && (
+              <Text style={styles.error}>{errors.confirmPassword}</Text>
+            )}
+          </View>
+
+          <View style={styles.rulesBox}>
+            <Text style={styles.rulesText}>Password harus mengandung:</Text>
+            <RuleItem met={passwordCriteria.length} label="Minimal 8 karakter" />
+            <RuleItem met={passwordCriteria.upper && passwordCriteria.lower} label="Huruf besar dan kecil" />
+            <RuleItem met={passwordCriteria.digit} label="Angka" />
+            <RuleItem met={passwordCriteria.symbol} label="Simbol (@$!%*#?&^_-)" />
+          </View>
+
+          {!!errors.general && <Text style={styles.error}>{errors.general}</Text>}
+        </KeyboardAwareScrollView>
+
+        <View style={styles.bottomArea}>
+          <TouchableOpacity
+            style={[styles.btn, loading && { opacity: 0.7 }]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Daftar</Text>}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </>
   );
 }
 
+const RuleItem = ({ met, label }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+    <Icon name={met ? 'check-circle' : 'close-circle'} size={16} color={met ? '#10b981' : '#ef4444'} />
+    <Text style={{ marginLeft: 8, color: met ? '#10b981' : '#ef4444', fontSize: RFValue(13) }}>{label}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
-  scroll: {
-    paddingHorizontal: mScale(20),
-    paddingTop: vScale(30),
+  subtitle: { 
+    fontSize: mScale(16), 
+    color: '#111827', 
+    fontWeight: '600', 
+    marginBottom: vScale(16) 
   },
-  backBtn: { marginBottom: vScale(10) },
-  title: {
-    fontSize: mScale(24),
-    fontWeight: '700',
-    marginTop: vScale(10),
-    color: '#000',
+  
+  fieldBox: { 
+    marginBottom: vScale(16) 
   },
-  subtitle: {
-    fontSize: mScale(14),
-    color: '#777',
-    marginVertical: vScale(10),
-  },
-  fieldBox: { marginTop: vScale(10) },
   label: {
-    fontSize: mScale(14),
-    color: '#333',
-  },
+     fontSize: mScale(14), 
+     color: '#374151', 
+     marginBottom: 
+     vScale(6), 
+     fontWeight: '600'
+     },
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: mScale(15),
-    paddingVertical: Platform.OS === 'android' ? vScale(8) : vScale(10),
-    marginTop: vScale(6),
+    borderRadius: 10,
+    paddingHorizontal: mScale(14),
+    paddingVertical: Platform.OS === 'android' ? vScale(10) : vScale(12),
     fontSize: mScale(14),
-    color: '#000',
+    backgroundColor: '#fff',
+    color: '#111827',
   },
   passBox: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: mScale(15),
-    paddingVertical: Platform.OS === 'android' ? vScale(8) : vScale(10),
-    marginTop: vScale(6),
+    borderRadius: 10,
+    paddingHorizontal: mScale(14),
+    backgroundColor: '#fff',
   },
-  passInput: {
-    flex: 1,
-    fontSize: mScale(14),
-    color: '#000',
+  passInput: { flex: 1, fontSize: mScale(14), color: '#111827' },
+  error: { color: '#ef4444', fontSize: mScale(12), marginTop: vScale(4) },
+  rulesBox: {
+    backgroundColor: '#fff',
+    borderLeftWidth: 3,
+    borderLeftColor: '#f87171',
+    paddingLeft: RFValue(12),
+    marginBottom: vScale(16),
   },
-  error: {
-    color: '#ef4444',
-    marginTop: vScale(6),
-    fontSize: mScale(13),
-    flexWrap: 'wrap',
-  },
+  rulesText: { color: '#6b7280', fontSize: RFValue(13), marginBottom: RFValue(4) },
   btn: {
     backgroundColor: '#FF7A00',
     paddingVertical: vScale(14),
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
   },
-  btnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: mScale(16),
+  btnText: { 
+    color: '#fff', 
+    fontSize: mScale(14), 
+    fontWeight: '600' 
   },
   bottomArea: {
-    padding: 20,
-    paddingBottom: 50,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
     backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 10,
+  },
+  scroll: {
+    paddingHorizontal: mScale(20),
+    paddingTop: vScale(30),
+    paddingBottom: vScale(100),
   },
 });

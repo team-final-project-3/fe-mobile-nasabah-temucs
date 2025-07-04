@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { RefreshControl, StyleSheet } from 'react-native';
+import { ScrollView, RefreshControl, StyleSheet } from 'react-native';
 
 export default function RefreshableScreen({
   children,
@@ -21,7 +21,7 @@ export default function RefreshableScreen({
     }
   }, [onRefresh]);
 
-  const Component = ScrollComponent || require('react-native').ScrollView;
+  const Component = ScrollComponent || ScrollView;
 
   return (
     <Component

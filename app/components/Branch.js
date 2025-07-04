@@ -13,14 +13,18 @@ export default function Branch({ branchId, data, userLocation, isPressable = fal
   const [addressText, setAddressText] = useState('Memuat alamat...');
   const [distanceToBranch, setDistanceToBranch] = useState('...');
 
-  
   useEffect(() => {
     const fetchBranch = async () => {
       try {
         const res = await getBranchById(branchId);
+        console.log('[Branch] Response dari API:', res);
         const branchData = res.branch || res;
+        console.log('[Branch] Data cabang hasil parsing:', branchData);
+
+        console.log('[Branch] Data cabang dari API:', branchData);
         setBranch(branchData);
         if (typeof onLoaded === 'function') {
+          console.log('[Branch] Memanggil onLoaded dengan:', branchData);
           onLoaded(branchData);
         }
       } catch (error) {
@@ -32,12 +36,16 @@ export default function Branch({ branchId, data, userLocation, isPressable = fal
 
     if (!data && branchId) {
       fetchBranch();
-    } else {
+    } else if (data) {
+      setBranch(data);
       setLoading(false);
+      if (typeof onLoaded === 'function') {
+        console.log('[Branch] Memanggil onLoaded dari data prop');
+        onLoaded(data);
+      }
     }
   }, [branchId, data]);
 
-  // Hitung jarak dan alamat
   useEffect(() => {
     if (userLocation?.coords && branch?.latitude && branch?.longitude) {
       const dist = calculateDistance(
@@ -109,7 +117,9 @@ export default function Branch({ branchId, data, userLocation, isPressable = fal
           </View>
         </View>
 
-        <Text style={styles.addressText}>{addressText}</Text>
+        <Text style={styles.addressText}>
+          {branch?.address || 'Alamat tidak tersedia'}
+        </Text>
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
@@ -162,17 +172,17 @@ const styles = StyleSheet.create({
   },
   statusTextOpen: {
     color: '#15803D',
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: 13,
   },
   statusTextClosed: {
     color: '#991B1B',
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: 13,
   },
   addressText: {
     color: '#6B7280',
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 6,
     marginBottom: 12,
   },
@@ -187,7 +197,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     marginLeft: 4,
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
   },
 });

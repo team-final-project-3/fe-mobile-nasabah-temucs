@@ -18,8 +18,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { RFValue } from 'react-native-responsive-fontsize';
-import axios from 'axios';
 import { forgotPassword } from '../api/api';
+import { useFocusEffect } from '@react-navigation/native';
+import Header from '../components/Header';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,6 +28,14 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useFocusEffect(
+  React.useCallback(() => {
+    setLoading(false);   
+    setError('');        
+    return () => {};
+  }, [])
+);
 
   const validateEmail = (value) => {
     if (!value.trim()) return 'Email tidak boleh kosong';
@@ -37,31 +46,32 @@ export default function ForgotPasswordScreen({ navigation }) {
 const handleSubmit = async () => {
   const errorMsg = validateEmail(email);
   if (errorMsg) {
+    console.log('[ForgotPassword] Validasi gagal:', errorMsg);
     setError(errorMsg);
     return;
   }
 
   setError('');
   setLoading(true);
+  console.log('[ForgotPassword] Mengirim permintaan lupa password untuk:', email);
 
   try {
     const result = await forgotPassword(email);
+    console.log('[ForgotPassword] Respons berhasil:', result);
     navigation.navigate('OtpResetPasswordScreen', {
       email,
       userId: result?.userId,
     });
   } catch (err) {
+    console.log('[ForgotPassword] Gagal mengirim OTP:', err.message);
     setError(err.message); 
     setLoading(false);
   }
 };
-
-
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent/>
+            <Header isResetPass/>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -71,15 +81,6 @@ const handleSubmit = async () => {
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Icon name="arrow-left" size={RFValue(24)} color="#000" />
-            </TouchableOpacity>
-
-            <Text style={styles.title}>Ubah Kata Sandi</Text>
             <Text style={styles.subtitle}>
               Masukkan email Anda untuk membuat kata sandi baru
             </Text>
@@ -113,7 +114,7 @@ const handleSubmit = async () => {
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </>
   );
 }
 
@@ -133,19 +134,19 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   title: {
-    fontSize: RFValue(22),
-    fontWeight: '700',
+    fontSize: RFValue(20),
+    fontWeight: '600',
     marginBottom: RFValue(8),
     color: '#000',
   },
   subtitle: {
-    fontSize: RFValue(14),
+    fontSize: RFValue(12),
     color: '#6b7280',
     marginBottom: RFValue(28),
     lineHeight: RFValue(20),
   },
   label: {
-    fontSize: RFValue(14),
+    fontSize: RFValue(12),
     marginBottom: RFValue(6),
     color: '#000',
   },
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: RFValue(12),
     paddingHorizontal: RFValue(14),
-    fontSize: RFValue(14),
+    fontSize: RFValue(12),
     color: '#000',
   },
   inputError: {
@@ -172,11 +173,11 @@ const styles = StyleSheet.create({
     paddingVertical: RFValue(14),
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: RFValue(20),
+    marginTop: RFValue(38),
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: RFValue(14),
   },
 });

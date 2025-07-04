@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -21,7 +20,9 @@ export default function Search() {
   
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+    <StatusBar barStyle="light-content" backgroundColor="transparent" translucent/>
+    
       <Header isSearch />
 
       <View style={styles.searchBarWrapper}>
@@ -69,7 +70,7 @@ export default function Search() {
           statusFilter={statusFilter} 
         />
       </View>
-    </SafeAreaView>
+    </>
   );
 }
 
